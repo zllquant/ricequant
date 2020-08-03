@@ -45,7 +45,6 @@ def init(context):
 
 
 def handle_bar(context, bar_dict):
-    import rqoptimizer
     # 如果是False(不是月初),直接返回
     if not _should_rebalance(context):
         return
@@ -72,33 +71,29 @@ def rebalance(context, bar_dict):
         if order_book_id not in context.target_portfolio:
             rqa.api.order_to(order_book_id, 0)
 
-    # 对每个股票计算目标权重和当前权重的差值
+    # 对每个股票计算目标价值和当前价值的差值
     # 差值为正的是买单, 反之为卖单
     capital = context.stock_account.total_value * (1 - context.cash_cushion)
     to_sell, to_buy = {}, {}
+    _money_for_one_lot = lambda order_book_id: bar_dict[order_book_id].close * 100
     for order_book_id, weight in context.target_portfolio.items():
         # 股票目标价值
         target_value = capital * weight
         # 目标和现有之差
         gap = target_value - positions[order_book_id].market_value
-        if gap > 0:
+        # 买卖至少大于1手股票价值
+        if abs(gap)<_money_for_one_lot(order_book_id):
+            continue
+        elif gap > 0:
             to_buy[order_book_id] = gap
         else:
             to_sell[order_book_id] = gap
 
     # to avoid liquidity issue, sell first, buy second
-    _money_for_one_lot = lambda order_book_id: bar_dict[order_book_id].close * 100
-    # 先卖
     for order_book_id, value in to_sell.items():
-        # 要卖出的至少大于1手股票价值
-        if abs(value) > _money_for_one_lot(order_book_id):
-            # value为负
-            rqa.api.order_value(order_book_id, value)
-    # 后买
+        rqa.api.order_value(order_book_id, value)
     for order_book_id, value in to_buy.items():
-        # 要买入的至少大于1手股票价值
-        if abs(value) > _money_for_one_lot(order_book_id):
-            rqa.api.order_value(order_book_id, value)
+        rqa.api.order_value(order_book_id, value)
 
 
 if __name__ == '__main__':
