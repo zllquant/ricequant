@@ -144,4 +144,4 @@ cython_debug/
 */industry.csv
 backtest-results
 *.yml
-*.pkl
+*/*.pkl
