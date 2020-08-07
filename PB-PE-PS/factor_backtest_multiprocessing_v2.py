@@ -1,6 +1,8 @@
 import rqalpha as rqa
+import rqalpha_plus
 import rqdatac as rqd
 import rqoptimizer as rqo
+import multiprocessing
 import utils
 import datetime
 import pickle
@@ -48,6 +50,8 @@ def handle_bar(context, bar_dict):
     # 如果是False(不是月初),直接返回
     if not _should_rebalance(context):
         return
+    print(context.now)
+    print("现有持仓数:", len(context.portfolio.positions))
     context.target_stocks = get_target_stocks(context, **context.stock_selection_args)
     context.target_portfolio = get_target_portfolio(context, **context.optimization_args)
     rebalance(context, bar_dict)
@@ -94,35 +98,31 @@ def rebalance(context, bar_dict):
         rqa.api.order_value(order_book_id, value)
 
 
+def my_run(init, handle_bar, config):
+    _code = config['extra']['context_vars']['index_stockpool']
+    _factor = config['extra']['context_vars']['stock_selection_args']['factor']
+    backtest_results = rqalpha_plus.run_func(init=init, handle_bar=handle_bar, config=config)
+    if not os.path.exists(f'results-28-industry/{_code}'):
+        os.makedirs(f'results-28-industry/{_code}')
+    with open(f'results-28-industry/{_code}/{_factor}.pkl', 'wb') as pf:
+        pickle.dump((config, backtest_results), pf)
+
+
 if __name__ == '__main__':
+
     MILLION = 1_000_000
     BILLION = 1000 * MILLION
+
     FACTORS = [
         ('pb_ratio_ttm', True),
         ('pe_ratio_ttm', True),
-        ('ps_ratio_ttm', True),
-        ('pcf_ratio_ttm', True),
-        ('inc_revenue_ttm', False),
-        ('inc_return_on_equity_ttm', False),
-        ('operating_profit_growth_ratio_ttm', False),
-        ('net_profit_growth_ratio_ttm', False),
-        ('gross_profit_growth_ratio_ttm', False),
-        ('net_asset_growth_ratio_ttm', False),
-        ('net_cash_flow_growth_ratio_ttm', False),
-        ('return_on_equity_ttm', False),
-        ('return_on_asset_ttm', False),
-        ('net_profit_margin_ttm', False),
-        ('gross_profit_margin_ttm', False),
-        ('profit_from_operation_to_revenue_ttm', False),
-        ('account_payable_turnover_rate_ttm', False),
-        ('inventory_turnover_ttm', False),
-        ('current_ratio_ttm', False),
-        ('quick_ratio_ttm', False),
-        ('total_asset_turnover_ttm', False)
+        ('ps_ratio_ttm', True)
+
     ]
 
     s = datetime.datetime.now()
     for code in utils.INDUSTRY_SHENWAN:
+        process_list = []
         for fac, asc in FACTORS:
             config = {
                 "base": {
@@ -131,13 +131,13 @@ if __name__ == '__main__':
                     "end_date": '2020-08-04',
                     "frequency": '1d',
                     "accounts": {"stock": 0.1 * BILLION},
-                    "data_bundle_path": '~/.rqalpha-plus/bundle'
+                    "data bundle path": r'C:\Users\Administrator\.rqalpha-plus\bundle'
                 },
 
                 "mod": {
                     "sys_analyser": {
                         "enabled": True,
-                        "plot": False,
+                        "plot": True,
                         "benchmark": code,
                     },
                 },
@@ -157,18 +157,20 @@ if __name__ == '__main__':
 
                         'optimization_args': {
                             'benchmark': code,
-                            'bnds': '在get_target_portfolio里面改',
-                            'objective': rqo.MinTrackingError()
+                            'objective': rqo.MinTrackingError(),
+                            'bnds': '在get_target_portfolio里面改'
                         },
                     },
                 },
             }
 
-            backtest_results = rqa.run_func(init=init, handle_bar=handle_bar, config=config)
-            if not os.path.exists(f'results-28-industry/{code}'):
-                os.makedirs(f'results-28-industry/{code}')
-            with open(f'results-28-industry/{code}/{fac}.pkl', 'wb') as pf:
-                pickle.dump((config, backtest_results), pf)
+            p = multiprocessing.Process(target=my_run,
+                                        kwargs={'init': init, 'handle_bar': handle_bar,
+                                                'config': config}
+                                        )
+            p.start()
+            process_list.append(p)
+            # 判断进程数量决定要不要往下执行
 
     e = datetime.datetime.now()
     print(f'共计用时: {e - s}')

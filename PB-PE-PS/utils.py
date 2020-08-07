@@ -5,13 +5,34 @@ import pickle
 
 rqd.init()
 
-def get_universe(date):
-    return (
-        rqd.all_instruments(type='CS', date=date)
-            .loc[lambda df: ~df['status'].isin(['Delisted', 'Unknown'])]
-            .loc[:, 'order_book_id']
-            .tolist()
-    )
+INDUSTRY_SHENWAN_TOP_10 = [
+    '801890.INDX', '801030.INDX', '801150.INDX', '801080.INDX', '801750.INDX',
+    '801730.INDX', '801880.INDX', '801760.INDX', '801160.INDX', '801140.INDX'
+]
+
+INDUSTRY_SHENWAN = [
+    '801010.INDX', '801020.INDX', '801030.INDX', '801040.INDX', '801050.INDX', '801080.INDX', '801110.INDX',
+    '801120.INDX', '801130.INDX', '801140.INDX', '801150.INDX', '801160.INDX', '801170.INDX', '801180.INDX',
+    '801200.INDX', '801210.INDX', '801230.INDX', '801710.INDX', '801720.INDX', '801730.INDX', '801740.INDX',
+    '801750.INDX', '801760.INDX', '801770.INDX', '801780.INDX', '801790.INDX', '801880.INDX', '801890.INDX',
+]
+
+INDUSTRY_ZHONGXIN = [
+    'CI005001.WI', 'CI005002.WI', 'CI005003.WI', 'CI005004.WI', 'CI005005.WI', 'CI005006.WI', 'CI005007.WI',
+    'CI005008.WI', 'CI005009.WI', 'CI005010.WI', 'CI005011.WI', 'CI005012.WI', 'CI005013.WI', 'CI005014.WI',
+    'CI005015.WI', 'CI005016.WI', 'CI005017.WI', 'CI005018.WI', 'CI005019.WI', 'CI005020.WI', 'CI005021.WI',
+    'CI005022.WI', 'CI005023.WI', 'CI005024.WI', 'CI005025.WI', 'CI005026.WI', 'CI005027.WI', 'CI005028.WI',
+    'CI005029.WI', 'CI005030.WI'
+]
+
+
+# def get_universe(date):
+#     return (
+#         rqd.all_instruments(type='CS', date=date)
+#             .loc[lambda df: ~df['status'].isin(['Delisted', 'Unknown'])]
+#             .loc[:, 'order_book_id']
+#             .tolist()
+#     )
 
 
 def get_industry(universe, date):
@@ -27,6 +48,7 @@ def drop_st(universe, date):
 
 
 def drop_suspended(universe, date):
+    # squeeze(axis=0):DataFrames with a single column or a single row are squeezed to a Series
     is_suspended = rqd.is_suspended(universe, date, date).squeeze()
     assert isinstance(is_suspended, pd.Series), 'is_suspended is not series'
     return is_suspended.index[~is_suspended]
@@ -86,8 +108,8 @@ def get_factor(universe, factor, start_date, end_date):
         return rqd.get_factor(universe, factor, start_date, end_date)
     else:
         return _get_factor_from_local_file(universe, factor, start_date)
-    
-    
+
+
 def _get_factor_from_local_file(universe, factor, start_date):
     if factor in _CACHE:
         return _CACHE[factor][start_date][universe]
