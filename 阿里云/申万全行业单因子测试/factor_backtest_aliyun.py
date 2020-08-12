@@ -131,7 +131,7 @@ if __name__ == '__main__':
                     "end_date": '2020-08-04',
                     "frequency": '1d',
                     "accounts": {"stock": 0.1 * BILLION},
-                    "data_bundle_path": '~/.rqalpha-plus/bundle'
+                    "data_bundle_path": '/home/zll/.rqalpha-plus/bundle'
                 },
 
                 "mod": {

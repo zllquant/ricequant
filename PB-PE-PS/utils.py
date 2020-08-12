@@ -26,13 +26,13 @@ INDUSTRY_ZHONGXIN = [
 ]
 
 
-# def get_universe(date):
-#     return (
-#         rqd.all_instruments(type='CS', date=date)
-#             .loc[lambda df: ~df['status'].isin(['Delisted', 'Unknown'])]
-#             .loc[:, 'order_book_id']
-#             .tolist()
-#     )
+def get_universe(date):
+    return (
+        rqd.all_instruments(type='CS', date=date)
+            .loc[lambda df: ~df['status'].isin(['Delisted', 'Unknown'])]
+            .loc[:, 'order_book_id']
+            .tolist()
+    )
 
 
 def get_industry(universe, date):
@@ -112,12 +112,13 @@ def get_factor(universe, factor, start_date, end_date):
 
 def _get_factor_from_local_file(universe, factor, start_date):
     if factor in _CACHE:
-        return _CACHE[factor][start_date][universe]
+        data = _CACHE[factor]
+        universe = list(set(data[start_date].index).intersection(set(universe)))
+        return data[start_date].loc[universe]
     else:
-        with open(f'{factor}.pkl', 'rb') as pf:
+        with open(f'factor/{factor}.pkl', 'rb') as pf:
             data = pickle.load(pf)
+        data = {k.strftime('%Y-%m-%d'): v for k, v in data.items()}
         _CACHE[factor] = data
-        return data[start_date][universe]
-
-
-
+        universe = list(set(data[start_date].index).intersection(set(universe)))
+        return data[start_date].loc[universe]
