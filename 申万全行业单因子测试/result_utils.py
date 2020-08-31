@@ -4,6 +4,9 @@ import pickle
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
+import multiprocessing
+from tqdm import tqdm
+
 plt.style.use('ggplot')
 rqd.init()
 
@@ -38,7 +41,7 @@ class BestFactorBacktest:
             path1 = path + '\\' + ids
             # 一个行业里面的因子
             factor_net_value = pd.DataFrame()
-            for factor in [i for i in os.listdir(path1)]:
+            for factor in [i for i in os.listdir(path1) if os.path.splitext(i)[-1] == '.pkl']:
                 path2 = path1 + '\\' + factor
                 with open(path2, 'rb') as pf:
                     result = pickle.load(pf)
@@ -47,8 +50,8 @@ class BestFactorBacktest:
                     continue
                 portfolio = backtest['sys_analyser']['portfolio']
                 # 净值
-                net_value = portfolio['static_unit_net_value']
-                factor_name = factor.split('.')[0]
+                net_value = portfolio['unit_net_value']
+                factor_name = factor[:-4]
                 # 列名
                 net_value.name = factor_name
                 factor_net_value = pd.concat([factor_net_value, net_value], axis=1)
@@ -65,7 +68,7 @@ class BestFactorBacktest:
         得到每个行业每天每个因子过去past_window个交易日的收益
         从而得到当天过去表现最好或最差的因子
         """
-        past_profit = net_value.groupby('industry').pct_change(past_window).dropna()
+        past_profit = net_value.groupby('industry').pct_change(past_window).dropna(how='all')
         if not reverse:
             best_factor = past_profit.idxmax(axis=1)
         else:
@@ -91,7 +94,7 @@ class BestFactorBacktest:
     @staticmethod
     def get_daily_profit(best_factor, net_value, interval=20, benchmark='000905.XSHG'):
         """
-
+        
         :param best_factor: 每个日期每个行业过去表现最好的因子
         :param net_value: 每个行业每天每个因子的净值
         :param interval: 调仓间隔
@@ -105,7 +108,7 @@ class BestFactorBacktest:
         lastdate = None
         # 调仓日列表
         balance_dates = dates[::interval]
-        for date in dates:
+        for date in tqdm(dates):
             if lastdate is None:
                 best_factor_series = best_factor.loc[date]
                 industry_weight = BestFactorBacktest.get_industry_weight(date, benchmark)
@@ -162,6 +165,10 @@ class BestFactorBacktest:
 
 if __name__ == '__main__':
     all_net_value_df = BestFactorBacktest.get_all_net_value_df('results')
-    for i in [30, 60]:
-        for j in [5, 10]:
-            BestFactorBacktest.run(i, j, all_net_value_df)
+    # pool = multiprocessing.Pool(6)
+    # for i in [30, 60, 90, 120, 240]:
+    #     for j in [5, 10, 20, 40, 60]:
+    #         pool.apply_async(func=BestFactorBacktest.run,
+    #                          args=(i, j, all_net_value_df))
+    # pool.close()
+    # pool.join()

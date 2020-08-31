@@ -115,7 +115,6 @@ def _get_factor_from_local_file(universe, factor, start_date):
 
 
 def get_factor(universe, factor, start_date, end_date):
-    assert start_date == end_date, 'start_date must equal to end_date'
     if factor in _RICEQUANT_FACTORS:
         return rqd.get_factor(universe, factor, start_date, end_date)
     else:

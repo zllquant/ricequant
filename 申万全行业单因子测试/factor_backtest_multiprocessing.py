@@ -1,7 +1,12 @@
+import codecs
+
 import rqalpha as rqa
 import rqdatac as rqd
 import rqoptimizer as rqo
 import multiprocessing
+
+import yaml
+
 import utils
 import datetime
 import time
@@ -41,8 +46,20 @@ def get_target_portfolio(context, **optimization_args):
     return target_portfolio.loc[lambda x: x != 0]
 
 
-# def init(context):
-#     pass
+def init(context):
+    with codecs.open('rqpro.yml', 'r', encoding='utf8') as stream:
+        conf = yaml.load(stream)
+        if 'proxy' in conf:
+            proxy_info = (conf['proxy'].get('type'),
+                          conf['proxy'].get('host'),
+                          conf['proxy'].get('port'),
+                          conf['proxy'].get('user'),
+                          conf['proxy'].get('password'))
+        else:
+            proxy_info = None
+        rqd.init(conf['rqdata_username'], conf['rqdata_password'],
+                 (conf['rqdata_host'], conf['rqdata_port']), proxy_info=proxy_info)
+    utils._RICEQUANT_FACTORS = rqd.get_all_factor_names()
 
 
 def handle_bar(context, bar_dict):
@@ -97,10 +114,10 @@ def rebalance(context, bar_dict):
         rqa.api.order_value(order_book_id, value)
 
 
-def my_run(handle_bar, config):
+def my_run(init, handle_bar, config):
     _code = config['extra']['context_vars']['index_stockpool']
     _factor = config['extra']['context_vars']['stock_selection_args']['factor']
-    backtest_results = rqa.run_func(handle_bar=handle_bar, config=config)
+    backtest_results = rqa.run_func(init=init, handle_bar=handle_bar, config=config)
     if not os.path.exists(f'results/{_code}'):
         os.makedirs(f'results/{_code}')
     with open(f'results/{_code}/{_factor}.pkl', 'wb') as pf:
@@ -113,26 +130,28 @@ if __name__ == '__main__':
     BILLION = 1000 * MILLION
 
     FACTORS = [
-        ('pb_ratio_ttm', True),
-        ('pe_ratio_ttm', True),
-        ('ps_ratio_ttm', True),
-        ('pcf_ratio_ttm', True),
-        ('inc_revenue_ttm', False),
-        ('inc_return_on_equity_ttm', False),
-        ('operating_profit_growth_ratio_ttm', False),
-        ('net_profit_growth_ratio_ttm', False),
-        ('gross_profit_growth_ratio_ttm', False),
-        ('net_asset_growth_ratio_ttm', False),
-        ('net_cash_flow_growth_ratio_ttm', False),
-        ('return_on_equity_ttm', False),
-        ('return_on_asset_ttm', False),
-        ('net_profit_margin_ttm', False),
-        ('gross_profit_margin_ttm', False),
-        ('profit_from_operation_to_revenue_ttm', False),
-        ('inventory_turnover_ttm', False),
-        ('current_ratio_ttm', False),
-        ('quick_ratio_ttm', False),
-        ('total_asset_turnover_ttm', False)
+        ('private.Hacken_Dividend_Org', False),
+        ('private.Hacken_Quality_Org', False)
+        # ('pb_ratio_ttm', True),
+        # ('pe_ratio_ttm', True),
+        # ('ps_ratio_ttm', True),
+        # ('pcf_ratio_ttm', True),
+        # ('inc_revenue_ttm', False),
+        # ('inc_return_on_equity_ttm', False),
+        # ('operating_profit_growth_ratio_ttm', False),
+        # ('net_profit_growth_ratio_ttm', False),
+        # ('gross_profit_growth_ratio_ttm', False),
+        # ('net_asset_growth_ratio_ttm', False),
+        # ('net_cash_flow_growth_ratio_ttm', False),
+        # ('return_on_equity_ttm', False),
+        # ('return_on_asset_ttm', False),
+        # ('net_profit_margin_ttm', False),
+        # ('gross_profit_margin_ttm', False),
+        # ('profit_from_operation_to_revenue_ttm', False),
+        # ('inventory_turnover_ttm', False),
+        # ('current_ratio_ttm', False),
+        # ('quick_ratio_ttm', False),
+        # ('total_asset_turnover_ttm', False)
     ]
 
     s = datetime.datetime.now()
@@ -178,7 +197,7 @@ if __name__ == '__main__':
                     },
                 },
             }
-            pool.apply_async(func=my_run, kwds={'handle_bar': handle_bar, 'config': config})
+            pool.apply_async(func=my_run, kwds={'init': init, 'handle_bar': handle_bar, 'config': config})
     pool.close()
     pool.join()
     e = datetime.datetime.now()
