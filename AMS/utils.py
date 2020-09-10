@@ -16,7 +16,7 @@ def get_universe(date):
 
 def get_industry(universe, date):
     return (
-        rqd.shenwan_instrument_industry(universe, date).loc[:, 'index_name'].rename('industry')
+        rqd.get_instrument_industry(universe,source='sws',date=date)['first_industry_name']
     )
 
 

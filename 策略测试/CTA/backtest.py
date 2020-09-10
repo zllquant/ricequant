@@ -1,9 +1,8 @@
-import pandas as pd
 import numpy as np
-import scipy as sp
 import matplotlib.pyplot as plt
 import multiprocessing
 import rqdatac as rqd
+import os
 
 rqd.init()
 
@@ -51,13 +50,16 @@ def visualize(daily_price, threshold, title):
     dp = daily_price.copy()
     dp['buy_signal'] = np.where(dp['trough'] >= threshold, dp['close'], np.nan)
     dp['sell_signal'] = np.where(dp['peak'] >= threshold, dp['close'], np.nan)
-    plt.figure(figsize=(18, 9))
+    plt.figure(figsize=(12, 6))
     plt.style.use('ggplot')
     plt.plot(dp.index, dp['close'], 'k-')
-    plt.plot(dp.index, dp['buy_signal'], 'r.', ms=20, alpha=0.7)
-    plt.plot(dp.index, dp['sell_signal'], 'gs', ms=10, alpha=0.7)
+    plt.plot(dp.index, dp['buy_signal'], 'r.', ms=20, alpha=0.8)
+    plt.plot(dp.index, dp['sell_signal'], 'gs', ms=10, alpha=0.8)
     plt.title(title, fontsize=20)
-    plt.savefig(f'picture/{title}.png')
+    path = f'picture/{title[:2]}'
+    if not os.path.exists(path):
+        os.makedirs(path)
+    plt.savefig(path + f'/{title}.png')
 
 
 def main(code=None, start_date=None, end_date=None, frequency=None, window=None, threshold=None):
@@ -67,7 +69,9 @@ def main(code=None, start_date=None, end_date=None, frequency=None, window=None,
 
 
 if __name__ == '__main__':
-    args = [(j + f'200{i + 1}', f'20200{i}01', f'20200{i + 1}01') for j in ['CU', 'NI', 'PB'] for i in range(1, 8)]
+    df = rqd.all_instruments(type='Future')
+    contract = df[df['industry_name'].isin(['有色', '贵金属'])]['underlying_symbol'].value_counts().index.tolist()
+    args = [(j + f'200{i + 1}', f'20200{i}01', f'20200{i + 1}01') for j in contract for i in range(1, 8)]
     pool = multiprocessing.Pool(7)
     for arg in args:
         config = {
