@@ -1,5 +1,4 @@
 {
     "python.pythonPath": "F:\\anaconda\\envs\\ricequant\\python.exe",
-    "python.linting.pylintEnabled": true,
-    "python.linting.enabled": true
+    "python.dataScience.jupyterServerURI": "local"
 }

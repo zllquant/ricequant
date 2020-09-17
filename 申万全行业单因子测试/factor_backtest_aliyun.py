@@ -130,7 +130,7 @@ if __name__ == '__main__':
                     "end_date": '2020-08-04',
                     "frequency": '1d',
                     "accounts": {"stock": 0.1 * BILLION},
-                    "data_bundle_path": '/home/zll/.rqalpha-plus/bundle'
+                    "data_bundle_path": r'C:\Users\Administrator\.rqalpha-plus\bundle'
                 },
 
                 "mod": {
@@ -166,8 +166,8 @@ if __name__ == '__main__':
             backtest_results = rqa.run_func(init=init, handle_bar=handle_bar, config=config)
             if not os.path.exists(f'results-28-industry/{code}'):
                 os.makedirs(f'results-28-industry/{code}')
-            with open(f'results-28-industry/{code}/{fac}.pkl', 'wb') as pf:
-                pickle.dump((config, backtest_results), pf)
+            # with open(f'results-28-industry/{code}/{fac}.pkl', 'wb') as pf:
+            #     pickle.dump((config, backtest_results), pf)
 
     e = datetime.datetime.now()
     print(f'共计用时: {e - s}')

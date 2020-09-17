@@ -97,5 +97,3 @@ def _get_factor_from_local_file(universe, factor, start_date):
         _CACHE[factor] = data
         return data[start_date][universe]
 
-
-
