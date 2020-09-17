@@ -144,8 +144,8 @@ if __name__ == '__main__':
     backtest_results = rqalpha_plus.run_func(handle_bar=handle_bar, config=config)
     if not os.path.exists('results'):
         os.makedirs('results')
-    with open(f'results/wrost-asc.pkl', 'wb') as pf:
-        pickle.dump((config, backtest_results), pf)
+    # with open(f'results/wrost-asc.pkl', 'wb') as pf:
+    #     pickle.dump((config, backtest_results), pf)
 
     e = datetime.datetime.now()
     print(f'共计用时: {e - s}')
