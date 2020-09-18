@@ -146,4 +146,4 @@ backtest-results
 *.yml
 *.pkl
 debug.py
-*.vscode
+.vscode
